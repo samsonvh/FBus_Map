@@ -9,6 +9,7 @@ var busMarkers = [];
 var waypointList = [];
 var routingControl = null;
 var currentCoor = 0;
+var currentRouteId = null;
 
 const firebaseConfig = {
   // databaseURL: "https://fbus-388009-default-rtdb.asia-southeast1.firebasedatabase.app/"
@@ -31,6 +32,7 @@ const getWaypointList = () => {
 
 const routeRef = ref(database, 'locations/');
 const loadRoutes = onValue(routeRef, (snapshot) => {
+  routingControl = null
   const data = snapshot.val();
   routeIdList = Object.keys(data);
   var isFirst = true;
@@ -43,6 +45,7 @@ const loadRoutes = onValue(routeRef, (snapshot) => {
     createBoardForStation(carouselItem, routeDetails.stations, mapObj);
 
     if (routingControl == null) {
+      currentRouteId = key;
       routingControl = L.Routing.control({
         waypoints: waypointList[currentCoor].newKey,
         fitSelectedRoutes: true
@@ -52,13 +55,21 @@ const loadRoutes = onValue(routeRef, (snapshot) => {
         currentCoor = 0;
       }
 
-      const busRef = ref(database, 'locations/' + waypointList[currentCoor].routeId + '/');
+      const busRef = ref(database, 'locations/' + currentRouteId + '/');
       onValue(busRef, (snapshot) => {
         const busData = snapshot.val();
-        console.log(busData);
+        if(waypointList[0].routeId === currentRouteId){
+          console.log("dup");
+        } else {
+          for(var i = 0; i<waypointList.length; i++){
+            if(waypointList[i].routeId === currentRouteId){
+              currentCoor = i;
+              break;
+            }
+          }
+        }
         busIdList = Object.keys(busList[currentCoor]);
         busIdList.forEach(id => {
-          console.log(busData[id]);
           var busIcon = L.icon({
             iconUrl: '../img/bus.png',
             iconSize: [60, 60]
@@ -75,7 +86,6 @@ const loadRoutes = onValue(routeRef, (snapshot) => {
               marker: L.marker([busData[id].latitude, busData[id].longitude], { icon: busIcon }).addTo(mapObj)
             })
           }
-          console.log(busMarkers);
         });
       })
     }
@@ -83,7 +93,17 @@ const loadRoutes = onValue(routeRef, (snapshot) => {
     isFirst = false;
   });
   document.getElementsByClassName('carousel')[0].addEventListener('slide.bs.carousel', function () {
-    ++currentCoor;
+    currentCoor++;
+    if(waypointList[0].routeId === currentRouteId){
+      console.log("dup");
+    } else {
+      for(var i = 0; i<waypointList.length; i++){
+        if(waypointList[i].routeId === currentRouteId){
+          currentCoor = i;
+          break;
+        }
+      }
+    }
     if (currentCoor >= waypointList.length) {
       currentCoor = 0;
     }
@@ -101,12 +121,11 @@ const loadRoutes = onValue(routeRef, (snapshot) => {
     //   busIdList = Object.keys(busList[currentCoor]);
     //   console.log(busData[0]);
     // })
-    const busRef = ref(database, 'locations/' + waypointList[currentCoor].routeId + '/');
+    const busRef = ref(database, 'locations/' + currentRouteId + '/');
     onValue(busRef, (snapshot) => {
       const busData = snapshot.val();
       busIdList = Object.keys(busList[currentCoor]);
       busIdList.forEach(id => {
-        console.log(busData[id]);
         var busIcon = L.icon({
           iconUrl: '../img/bus.png',
           iconSize: [60, 60]
@@ -115,8 +134,6 @@ const loadRoutes = onValue(routeRef, (snapshot) => {
       });
     })
   })
-  console.log(busIdList)
-  console.log(busList);
 });
 
 

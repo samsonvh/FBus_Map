@@ -12,7 +12,6 @@ var currentCoor = 0;
 var currentRouteId = null;
 
 const firebaseConfig = {
-  // databaseURL: "https://fbus-388009-default-rtdb.asia-southeast1.firebasedatabase.app/"
   databaseURL: 'https://fbus-public-map-default-rtdb.asia-southeast1.firebasedatabase.app'
 };
 
@@ -28,16 +27,16 @@ L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
 
 const getWaypointList = () => {
   return waypointList;
-}
+};
 
 const routeRef = ref(database, 'locations/');
 const loadRoutes = onValue(routeRef, (snapshot) => {
-  routingControl = null
+  routingControl = null;
   const data = snapshot.val();
   routeIdList = Object.keys(data);
   var isFirst = true;
-  routeIdList.forEach(async key => {
-    busList.push(data[key])
+  routeIdList.forEach(async (key) => {
+    busList.push(data[key]);
     const routeDetails = await getRouteDetails(key);
     const carouselItem = createBoardForRoute(routeDetails, isFirst);
     document.getElementById('my-map-carousel').appendChild(carouselItem);
@@ -58,25 +57,25 @@ const loadRoutes = onValue(routeRef, (snapshot) => {
       const busRef = ref(database, 'locations/' + currentRouteId + '/');
       onValue(busRef, (snapshot) => {
         const busData = snapshot.val();
-        if(waypointList[0].routeId === currentRouteId){
-          console.log("dup");
+        if (waypointList[0].routeId === currentRouteId) {
+          console.log('dup');
         } else {
-          for(var i = 0; i<waypointList.length; i++){
-            if(waypointList[i].routeId === currentRouteId){
+          for (var i = 0; i < waypointList.length; i++) {
+            if (waypointList[i].routeId === currentRouteId) {
               currentCoor = i;
               break;
             }
           }
         }
         busIdList = Object.keys(busList[currentCoor]);
-        busIdList.forEach(id => {
+        busIdList.forEach((id) => {
           var busIcon = L.icon({
             iconUrl: '../img/bus.png',
             iconSize: [60, 60]
-          })
-          if (busMarkers.some(busMarker => busMarker.busId === id)) {
-            busMarkers.forEach(busMarker => {
-              if(busMarker.busId === id){
+          });
+          if (busMarkers.some((busMarker) => busMarker.busId === id)) {
+            busMarkers.forEach((busMarker) => {
+              if (busMarker.busId === id) {
                 busMarker.setLatLng([busData[id].latitude, busData[id].longitude]);
               }
             });
@@ -84,21 +83,21 @@ const loadRoutes = onValue(routeRef, (snapshot) => {
             busMarkers.push({
               busId: id,
               marker: L.marker([busData[id].latitude, busData[id].longitude], { icon: busIcon }).addTo(mapObj)
-            })
+            });
           }
         });
-      })
+      });
     }
 
     isFirst = false;
   });
   document.getElementsByClassName('carousel')[0].addEventListener('slide.bs.carousel', function () {
     currentCoor++;
-    if(waypointList[0].routeId === currentRouteId){
-      console.log("dup");
+    if (waypointList[0].routeId === currentRouteId) {
+      console.log('dup');
     } else {
-      for(var i = 0; i<waypointList.length; i++){
-        if(waypointList[i].routeId === currentRouteId){
+      for (var i = 0; i < waypointList.length; i++) {
+        if (waypointList[i].routeId === currentRouteId) {
           currentCoor = i;
           break;
         }
@@ -115,34 +114,45 @@ const loadRoutes = onValue(routeRef, (snapshot) => {
       fitSelectedRoutes: true
     }).addTo(mapObj);
 
-    // const busRef = ref(database, 'locations/' + waypointList[currentCoor].routeId + '/');
-    // onValue(busRef, (snapshot) => {
-    //   const busData = snapshot.val();
-    //   busIdList = Object.keys(busList[currentCoor]);
-    //   console.log(busData[0]);
-    // })
     const busRef = ref(database, 'locations/' + currentRouteId + '/');
     onValue(busRef, (snapshot) => {
       const busData = snapshot.val();
       busIdList = Object.keys(busList[currentCoor]);
-      busIdList.forEach(id => {
+      busIdList.forEach((id) => {
         var busIcon = L.icon({
           iconUrl: '../img/bus.png',
           iconSize: [60, 60]
-        })
+        });
         L.marker([busData[id].latitude, busData[id].longitude], { icon: busIcon }).addTo(mapObj);
       });
-    })
-  })
+    });
+  });
+
+  // Function to update bus markers on the map
+  const updateBusMarkers = () => {
+    const busRef = ref(database, 'locations/' + currentRouteId + '/');
+    onValue(busRef, (snapshot) => {
+      const busData = snapshot.val();
+      busIdList = Object.keys(busList[currentCoor]);
+      busMarkers.forEach((busMarker) => {
+        const busId = busMarker.busId;
+        if (busData.hasOwnProperty(busId)) {
+          const { latitude, longitude } = busData[busId];
+          busMarker.marker.setLatLng([latitude, longitude]);
+        }
+      });
+    });
+  };
+
+  // Update bus markers on the map initially
+  updateBusMarkers();
 });
 
-
-
 const getRouteDetails = async (routeId) => {
-  const response = await fetch('https://fbus-final.azurewebsites.net/api/routes/' + routeId)
+  const response = await fetch('https://fbus-final.azurewebsites.net/api/routes/' + routeId);
   const data = await response.json();
   return data;
-}
+};
 
 const createBoardForRoute = (routeDetails, active) => {
   const carouselItem = document.createElement('div');
@@ -202,7 +212,7 @@ const createBoardForRoute = (routeDetails, active) => {
   carouselItem.appendChild(mapDiv);
 
   return carouselItem;
-}
+};
 
 const createBoardForStation = (carouselItem, stations, mapObj) => {
   const stationBoard = document.createElement('div');
@@ -246,7 +256,8 @@ const createBoardForStation = (carouselItem, stations, mapObj) => {
 
     const stationAddress = document.createElement('p');
     stationAddress.classList.add('station-address');
-    stationAddress.textContent = station.addressNumber + " " + station.street + ", " + station.ward + ", " + station.district + ", " + station.city;
+    stationAddress.textContent =
+      station.addressNumber + ' ' + station.street + ', ' + station.ward + ', ' + station.district + ', ' + station.city;
 
     stationInforContainer.appendChild(stationAddress);
     stationContainer.appendChild(stationInforContainer);
@@ -256,16 +267,34 @@ const createBoardForStation = (carouselItem, stations, mapObj) => {
   }
 
   var newKey = stations[0].routeId;
-  waypointList.push({ routeId: stations[0].routeId, newKey: stationCoors })
+  waypointList.push({ routeId: stations[0].routeId, newKey: stationCoors });
 
   stationBoard.appendChild(stationBoardContentContainer);
   carouselItem.querySelector('.board-container').appendChild(stationBoard);
-}
+};
 
 const createMap = (routeId) => {
   const routeDiv = 'route-map-' + routeId;
 
-
-
   return mapObj;
-}
+};
+
+// Function to update bus markers on the map
+const updateBusMarkers = () => {
+  const busRef = ref(database, 'locations/' + currentRouteId + '/');
+  onValue(busRef, (snapshot) => {
+    const busData = snapshot.val();
+    busIdList = Object.keys(busList[currentCoor]);
+    busMarkers.forEach((busMarker) => {
+      const busId = busMarker.busId;
+      if (busData.hasOwnProperty(busId)) {
+        const { latitude, longitude } = busData[busId];
+        busMarker.marker.setLatLng([latitude, longitude]);
+      }
+    });
+  });
+};
+
+// Update bus markers on the map initially
+updateBusMarkers();
+
